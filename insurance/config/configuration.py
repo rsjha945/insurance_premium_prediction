@@ -145,7 +145,7 @@ class Configuration:
         :param self: Access variables that belongs to the class
         
         :return: A trainpipelineconfig object
-        :author: anil
+        :author: Ravi Shankar
         """
         
         try:

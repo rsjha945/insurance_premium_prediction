@@ -6,4 +6,6 @@ sklearn
 matplotlib
 PyYAML
 evidently
+dill
+six
 -e .
