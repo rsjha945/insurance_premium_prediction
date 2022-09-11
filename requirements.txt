@@ -5,4 +5,5 @@ numpy
 sklearn
 matplotlib
 PyYAML
+evidently
 -e .
