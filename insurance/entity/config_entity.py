@@ -11,7 +11,7 @@ DataIngestionConfig = namedtuple("DataIngestionConfig",
 DataVaidationConfig = namedtuple("DataVaidationConfig",
                                                       ["schema_file_path"])
 
-# add_bedroom_per_romm : optional column to be added in dataset or not -> T or F
+# add_bedroom_per_room : optional column to be added in dataset or not -> T or F
 DataTransformation = namedtuple("DataTransformation",[
                                                     "add_bedroom_per_romm",
                                                     "transformed_train_dir",
