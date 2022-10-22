@@ -13,7 +13,7 @@ def index():
         #insurance = InsuranceException(e,sys)
         #logging.info(insurance.error_message)
         #logging.info("We are testing logging module")
-    return "CI CD pipeline has been established check it."
+    return "CI CD pipeline has been established"
 
 
 if __name__=="__main__":

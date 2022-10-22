@@ -115,9 +115,9 @@ class Configuration:
                                                         data_tranformation_config_info[DATA_TRANSFORMATION_PREPROCESSED_OBJECT_FILE_NAME_KEY])
 
 
-            add_bedroom_per_romm = data_tranformation_config_info[DATA_TRANSFORMATION_ADD_BEDROOM_PER_ROOM_KEY]
+            add_bedroom_per_room =  data_tranformation_config_info[DATA_TRANSFORMATION_ADD_BEDROOM_PER_ROOM_KEY]
 
-            data_tranformation = DataTransformationConfig( add_bedroom_per_romm= add_bedroom_per_romm ,
+            data_tranformation = DataTransformationConfig( add_bedroom_per_room= add_bedroom_per_room ,
                                                 transformed_train_dir = transformed_train_dir,
                                                 transformed_test_dir = transformed_test_dir, 
                                                 preprocessed_object_file_path= preprocessed_obj_file_path)
@@ -172,7 +172,7 @@ class Configuration:
 
     def get_model_pusher_cofig(self)-> ModelPusherConfig:
         try:
-            time_stamp = f"{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            time_stamp = self.time_stamp            
             model_pusher_config_info = self.config_info[MODEL_PUSHER_CONFIG_KEY]
             export_dir_path = os.path.join(ROOT_DIR, model_pusher_config_info[MODEL_PUSHER_MODEL_EXPORT_DIR_KEY],
                                            time_stamp)
