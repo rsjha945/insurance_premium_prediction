@@ -13,8 +13,11 @@ class InsuranceException(Exception):
     @staticmethod
     def get_detailed_error_message(error_message:Exception,error_detail:sys)->str:
         """
-        error_message: Exception object
-        error_detail: object of sys module
+        The get_detailed_error_message function accepts an error message and a traceback object as input. 
+        It returns a detailed error message that includes the file name, line number, and original error message.
+        :param error_message:Exception: Get the error message that was thrown by python
+        :param error_detail:sys: Get the error message and line number
+        :return: A detailed error message
         """
         _,_ ,exec_tb = error_detail.exc_info()
 
