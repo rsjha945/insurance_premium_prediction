@@ -2,7 +2,6 @@ import shutil
 import sys
 from xml.dom import InuseAttributeErr
 from insurance.entity.config_entity import TrainPipelineConfig,DataIngestionConfig, DataVaidationConfig, DataTransformationConfig, ModelTrainerConfig, ModelEvaluationConfig, ModelPusherConfig
-
 from insurance.util.utils import read_yaml_file
 from insurance.constant import *
 from insurance.logger import logging
@@ -31,18 +30,16 @@ class Configuration:
         
         :param self: Access the class instance inside of a method
         :return: A dataingestionconfig object
-
-        :author: anil
         """
         try:
             artifact_dir = self.training_pipeline_config.artifact_dir
-            data_ingestion_artifact_dir=os.path.join(artifact_dir,DATA_INGESTION_ARTIFACT_DIR )
+            data_ingestion_artifact_dir=os.path.join(artifact_dir,DATA_INGESTION_ARTIFACT_DIR,self.time_stamp )
             data_ingestion_info = self.config_info[DATA_INGESTION_CONFIG_KEY]
 
-            zip_dataset_dir = data_ingestion_info[DATA_INGESTION_ZIP_DATASET_DIR_KEY]
-            zip_file_name = data_ingestion_info[DATA_INGESTION_DATASET_ZIP_NAME_KEY]
-            zip_file_path = os.path.join(data_ingestion_artifact_dir,zip_dataset_dir,zip_file_name)
 
+            zip_download_url = data_ingestion_info[DATA_INGESTION_DONWLOAD_URL_KEY]
+            zip_dataset_dir = os.path.join(data_ingestion_artifact_dir,data_ingestion_info[DATA_INGESTION_ZIP_DATASET_DIR_KEY])
+            
             raw_data_dir = os.path.join(data_ingestion_artifact_dir,
             data_ingestion_info[DATA_INGESTION_RAW_DATA_DIR_KEY]
             )
@@ -59,13 +56,14 @@ class Configuration:
                 ingested_data_dir,
                 data_ingestion_info[DATA_INGESTION_TEST_DIR_KEY]
             )
+            zip_dataset_name = data_ingestion_info[DATA_INGESTION_ZIP_DATASET_NAME]
 
-
-            data_ingestion_config=DataIngestionConfig(
-                zip_dataset_file_path=zip_file_path,
-                raw_data_dir=raw_data_dir, 
-                ingested_train_dir=ingested_train_dir, 
-                ingested_test_dir=ingested_test_dir
+            data_ingestion_config=DataIngestionConfig(zip_download_dir=zip_dataset_dir,
+                                                        zip_dataset_name = zip_dataset_name,
+                                                        dataset_download_url=zip_download_url,
+                                                        raw_data_dir=raw_data_dir, 
+                                                        ingested_train_dir=ingested_train_dir, 
+                                                        ingested_test_dir=ingested_test_dir
             )
             logging.info(f"Data Ingestion config: {data_ingestion_config}")
             return data_ingestion_config
@@ -97,7 +95,7 @@ class Configuration:
         except Exception as e:
             raise InsuranceException(e,sys) from e
 
-    def get_data_transformation_config(self)-> DataTransformation:
+    def get_data_transformation_config(self)-> DataTransformationConfig:
         
         try:
             data_tranformation_config_info = self.config_info[DATA_TRANSFORMATION_CONFIG_KEY]
@@ -119,7 +117,7 @@ class Configuration:
 
             add_bedroom_per_romm = data_tranformation_config_info[DATA_TRANSFORMATION_ADD_BEDROOM_PER_ROOM_KEY]
 
-            data_tranformation = DataTransformation( add_bedroom_per_romm= add_bedroom_per_romm ,
+            data_tranformation = DataTransformationConfig( add_bedroom_per_romm= add_bedroom_per_romm ,
                                                 transformed_train_dir = transformed_train_dir,
                                                 transformed_test_dir = transformed_test_dir, 
                                                 preprocessed_object_file_path= preprocessed_obj_file_path)
@@ -136,7 +134,7 @@ class Configuration:
 
 
             model_trainer_artfiact_dir = os.path.join(artifact_dir,
-                                                    model_trainer_config_info[MODEL_TRAINER_ARTIFACT_DIR],
+                                                    MODEL_TRAINER_ARTIFACT_DIR,
                                                     self.time_stamp)
             trained_model_file_path = os.path.join(model_trainer_artfiact_dir,
                                                     model_trainer_config_info[MODEL_TRAINER_TRAINED_MODEL_DIR_KEY],
@@ -156,10 +154,35 @@ class Configuration:
             raise InsuranceException(e, sys) from e
 
     def get_model_evaluation_cofig(self)-> ModelEvaluationConfig:
-        pass
+        try:
+            model_evaluation_config = self.config_info[MODEL_EVALUATION_CONFIG_KEY]
+            artifact_dir = os.path.join(self.training_pipeline_config.artifact_dir,
+                                        MODEL_EVALUATION_ARTIFACT_DIR, )
+
+            model_evaluation_file_path = os.path.join(artifact_dir,
+                                                    model_evaluation_config[MODEL_EVALUATION_FILE_NAME_KEY])
+            response = ModelEvaluationConfig(model_evaluation_file_path=model_evaluation_file_path,
+                                            time_stamp=self.time_stamp)
+            
+            
+            logging.info(f"Model Evaluation Config: {response}.")
+            return response
+        except Exception as e:
+            raise InsuranceException(e,sys) from e
 
     def get_model_pusher_cofig(self)-> ModelPusherConfig:
-        pass
+        try:
+            time_stamp = f"{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            model_pusher_config_info = self.config_info[MODEL_PUSHER_CONFIG_KEY]
+            export_dir_path = os.path.join(ROOT_DIR, model_pusher_config_info[MODEL_PUSHER_MODEL_EXPORT_DIR_KEY],
+                                           time_stamp)
+
+            model_pusher_config = ModelPusherConfig(export_dir_path=export_dir_path)
+            logging.info(f"Model pusher config {model_pusher_config}")
+            return model_pusher_config
+
+        except Exception as e:
+            raise InsuranceException(e,sys) from e
 
     def get_training_pipeline_config(self)-> TrainPipelineConfig:
         """
@@ -170,7 +193,7 @@ class Configuration:
         :param self: Access variables that belongs to the class
         
         :return: A trainpipelineconfig object
-        :author: Ravi Shankar
+        :author: anil
         """
         
         try:
