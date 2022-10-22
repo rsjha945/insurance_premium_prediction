@@ -1,6 +1,8 @@
+import imp
 import sys
 from insurance.entity.artifact_entity import DataIngestionArtifact,DataValidationArtifact,ModelEvaluationArtifact, DataTransformationArtifact, ModelTrainerArtifact
 from insurance.entity.config_entity import DataIngestionConfig
+from insurance.logger import logging
 from insurance.config.configuration import Configuration
 from insurance.exception import InsuranceException
 from insurance.component.data_ingestion import DataIngestion
@@ -8,6 +10,7 @@ from insurance.component.data_validation import DataValidation
 from insurance.component.data_transformation import Data_Tranformation
 from insurance.component.model_trainer import ModelTrainer
 from insurance.component.model_evaluation import ModelEvaluation
+from insurance.component.model_pusher import ModelPusher
 
 class Pipeline:
 
@@ -74,6 +77,15 @@ class Pipeline:
         except Exception as e:
             raise InsuranceException(e, sys) from e
 
+    def start_model_pusher(self, model_eval_artifact: ModelEvaluationArtifact) -> ModelPusherArtifact:
+        try:
+            model_pusher = ModelPusher(
+                model_pusher_config=self.config.get_model_pusher_cofig(),
+                model_evaluation_artifact=model_eval_artifact
+            )
+            return model_pusher.initiate_model_pusher()
+        except Exception as e:
+            raise InsuranceException(e, sys) from e
 
     def run_pipeline(self):
         try:
