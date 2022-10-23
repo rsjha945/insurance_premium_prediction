@@ -1,10 +1,16 @@
 from setuptools import setup,find_packages
 from typing import List
 
+
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
+
 #Declaring variables for setup functions
 PROJECT_NAME="insurance-premium-predictor"
 VERSION="0.0.3"
 AUTHOR="Ravi Shankar"
+USER_NAME = "rsjha945"
 DESRCIPTION="This is a Insurance Premium Prediction Machine Learning Project"
 PACKAGES=["insurance"]
 REQUIREMENT_FILE_NAME="requirements.txt"
@@ -27,6 +33,8 @@ name=PROJECT_NAME,
 version=VERSION,
 author=AUTHOR,
 description=DESRCIPTION,
-packages=find_packages(), 
+packages=find_packages(),
+url=f"https://github.com/{USER_NAME}/{PROJECT_NAME}",
+python_requires=">=3.7",
 install_requires=get_requirements_list()
 )
