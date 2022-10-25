@@ -7,7 +7,6 @@ import numpy as np
 import dill
 
 
-
 def write_yaml_file(file_path:str,data:dict=None):
     """
     Create yaml file 
@@ -20,16 +19,16 @@ def write_yaml_file(file_path:str,data:dict=None):
             if data is not None:
                 yaml.dump(data,yaml_file)
     except Exception as e:
-        raise InsuranceException(e,sys) 
+        raise InsuranceException(e,sys)
 
-def read_yaml_file(filepath: str) -> dict:
+def read_yaml_file(filepath: str)-> dict:
     """
     The read_yaml_file function reads a yaml file and returns the contents as a dictionary.
     
     :param filepath:str: Specify the location of the yaml file that is to be read
     :return: A dictionary that contains the contents of the yaml file
   
-    :author: Ravi Shankar
+    :author: anil
     """
     
     try:
@@ -52,7 +51,7 @@ def load_data(file_path: str, schema_file_path: str) -> pd.DataFrame:
 
     :return: A pandas dataframe
 
-    :author: Ravi Shankar
+    :author: anil
     """
     try:
         datatset_schema = read_yaml_file(schema_file_path)
