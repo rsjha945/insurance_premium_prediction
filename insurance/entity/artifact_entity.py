@@ -1,7 +1,5 @@
 from collections import namedtuple
 
-from .config_entity import DataTransformation
-
 
 DataIngestionArtifact = namedtuple("DataIngestionArtifact",
                                 ["train_file_path","test_file_path","is_generated","message"])
