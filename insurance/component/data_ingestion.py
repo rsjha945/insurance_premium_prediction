@@ -51,8 +51,6 @@ class DataIngestion:
         :param zip_file_path:str: Specify the path to the zip file that needs to be extracted
         
         :return: None
-
-        :author: Ravi Shankar
         """
         try:
             raw_data_dir = self.data_ingestion_config.raw_data_dir
