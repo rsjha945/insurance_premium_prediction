@@ -2,90 +2,79 @@
 
 {% block head %}
 
-
-<title>Insurance Premium Predictor</title>
+<title>Insurance Premium Estimator</title>
 {% endblock %}
 
 {% block content %}
 
 <div class="row">
-    <div class="col-md-6 col-sm-12 col-xs-6 col-lg-6">
+    <div class="col-md-6 col-sm-12 col-xs-6 col-lg-6" style="border:2px solid black; border-radius:10px;  background: linear-gradient(to right, #b005b3, #004e92);">
 
 
         <form action="/predict" method="post">
-            <legend>Premium Prediction Form</legend>
+            <legend style="color: white;">Insurance Premium Estimation Form</legend>
             <div class="mb-3">
-                <label class="form-label">Age</label>
-                <input class="form-control" type="text" name="age" placeholder="Enter your age"
+                <label class="form-label">age</label>
+                <input class="form-control" type="text"  name="age" placeholder="Enter a value of age"
                     required />
-
             </div>
             <div class="mb-3">
-                <label class="form-label">Gender</label>
-                <select class="form-control" name="sex" placeholder="Enter your Gender"
+                <label class="form-label">sex</label>
+                <select class="form-control" name="sex" placeholder="Enter a value of sex"
                     required>
-
                     <option value="male">
-                        Male
+                        male
                     </option>
                     <option value="female">
-                        Female
+                        female
+                    </option>
+                </select>
+            <div class="mb-3">
+                <label class="form-label">smoker</label>
+                <select class="form-control" name="smoker" placeholder="Enter a value of Smoker"
+                    required>
+                    <option value="yes">
+                        yes
+                    </option>
+                    <option value="no">
+                        no
                     </option>
                 </select>
             </div>
-
-            </div>
             <div class="mb-3">
-                <label class="form-label">BMI</label>
-                <input class="form-control" type="text" name="bmi"
-                    placeholder="Enter a value of bmi" />
-
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Children</label>
-                <input class="form-control" type="text" name="children" placeholder="How many children do you have ?"
+                <label class="form-label">bmi</label>
+                <input class="form-control" type="text" name="bmi" placeholder="Enter a value of Bmi"
                     required />
 
             </div>
-
-        
             <div class="mb-3">
-                <label class="form-label">Smoker</label>
-                <select class="form-control" name="smoker" placeholder="Are you smoker ?"
-                    required>
-
-                    <option value="yes">
-                        Yes
-                    </option>
-                    <option value="no">
-                        No
-                    </option>
-                </select>
+                <label class="form-label">children</label>
+                <input class="form-control" type="text" name="children"
+                    placeholder="Enter a number of children" required />
             </div>
-
             <div class="mb-3">
-                <label class="form-label">Region</label>
-                <select class="form-control" name="region" placeholder="Enter your region"
+                <label class="form-label">region</label>
+                <select class="form-control" name="region" placeholder="Enter a value of region"
                     required>
-                    
-                    <option value="southeast">
-                        Southeast
-                    </option>
-                    <option value="southwest">
-                        Southwest
-                    </option>
+
                     <option value="northeast">
-                        Northeast
+                        northeast
                     </option>
                     <option value="northwest">
-                        Northwest
+                        northwest
                     </option>
+                    <option value="southeast">
+                        southeast
+                    </option>
+                    <option value="southwest">
+                        southwest
+                    </option>
+
                 </select>
             </div>
-
             <div class="mb-3">
 
-                <input class="btn btn-primary" type="submit" value = "Predict Insurance Premium" required />
+                <input class="btn btn-primary" type="submit" value="Predict Insurance Premium Value" required />
             </div>
 
         </form>
@@ -94,10 +83,10 @@
     <div class="col-md-6 col-sm-12 col-xs-6 col-lg-6">
         <div class="card">
             <div class="card-header">
-              Insurance Premium Price
+              Insurance Premium price
             </div>
-            <div class="card-body"> 
-        {% if context['premium_data'] is not none %}
+            <div class="card-body">
+        {% if context['Insurance_data'] is not none %}
         <table class="table table-striped">
             <caption>Insurance Premium Prediction </caption>
             <tr>
@@ -105,7 +94,7 @@
                 <th>Feature Value</th>
 
             </tr>
-            {% for column,value in context['premium_data'].items() %}
+            {% for column,value in context['Insurance_data'].items() %}
 
 
 
@@ -117,9 +106,9 @@
             {% endfor %}
             <tr>
 
-                <td>expenses</td>
+                <td>expenses </td>
                 <td>
-                    {{ context['expenses'][0] }}
+                    {{ context['expenses'] }}
                 </td>
             </tr>
         </table>
@@ -127,15 +116,14 @@
         {% else %}
        
               <h5 class="card-title">Submit Form</h5>
-              <p class="card-text">Kindly provide necessary information to estimate insurance price</p>
+              <p class="card-text">Kindly provide necessary information to estimate Insurance Premium price</p>
             
          
 
         {% endif %}
-        Go to <a href="/" class="btn btn-primary">Home</a> 
+        Go to <a href="/" class="btn btn-primary">Home</a>
     </div>
 </div>
     </div>
-    
-        
+
     {% endblock %}

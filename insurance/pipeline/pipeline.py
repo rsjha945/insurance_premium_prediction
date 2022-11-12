@@ -1,109 +1,111 @@
 from collections import namedtuple
 from datetime import datetime
 import uuid
-import pandas as pd
-import os
-import sys
+from insurance.config.configuration import Configuartion
+from insurance.logger import logging,get_log_file_name
+from insurance.exception import insuranceException
+
 from threading import Thread
-from insurance.entity.artifact_entity import ModelPusherArtifact,DataIngestionArtifact,DataValidationArtifact,ModelEvaluationArtifact, DataTransformationArtifact, ModelTrainerArtifact
+from typing import List
+from multiprocessing import Process
+from insurance.entity.artifact_entity import ModelPusherArtifact, DataIngestionArtifact,ModelEvaluationArtifact
+from insurance.entity.artifact_entity import DataValidationArtifact, DataTransformationArtifact, ModelTrainerArtifact
+from insurance.entity.config_entity import DataIngestionConfig,ModelEvaluationConfig
 from insurance.entity.config_entity import DataIngestionConfig
-from insurance.logger import logging
-from insurance.config.configuration import Configuration
-from insurance.exception import InsuranceException
 from insurance.component.data_ingestion import DataIngestion
 from insurance.component.data_validation import DataValidation
-from insurance.component.data_transformation import Data_Tranformation
+from insurance.component.data_transformation import DataTransformation
+import os,sys
+
 from insurance.component.model_trainer import ModelTrainer
 from insurance.component.model_evaluation import ModelEvaluation
 from insurance.component.model_pusher import ModelPusher
-from insurance.constant import EXPERIMENT_DIR_NAME, EXPERIMENT_FILE_NAME
-
+import os, sys
+from collections import namedtuple
+from datetime import datetime
+import pandas  as pd
+from insurance.constant import EXPERIMENT_DIR_NAME,EXPERIMENT_FILE_NAME
 Experiment = namedtuple("Experiment", ["experiment_id", "initialization_timestamp", "artifact_time_stamp",
                                        "running_status", "start_time", "stop_time", "execution_time", "message",
                                        "experiment_file_path", "accuracy", "is_model_accepted"])
 
 
 
-configuration = Configuration()
+
 class Pipeline(Thread):
     experiment: Experiment = Experiment(*([None] * 11))
-    experiment_file_path = os.path.join(configuration.training_pipeline_config.artifact_dir,EXPERIMENT_DIR_NAME, EXPERIMENT_FILE_NAME)
-
-    def __init__(self,config : Configuration = Configuration())-> None:
+    experiment_file_path = None
+    def __init__(self, config: Configuartion ) -> None:
         try:
             os.makedirs(config.training_pipeline_config.artifact_dir, exist_ok=True)
             Pipeline.experiment_file_path=os.path.join(config.training_pipeline_config.artifact_dir,EXPERIMENT_DIR_NAME, EXPERIMENT_FILE_NAME)
             super().__init__(daemon=False, name="pipeline")
             self.config = config
         except Exception as e:
-            raise InsuranceException(e,sys)
+            raise insuranceException(e, sys) from e
 
     def start_data_ingestion(self) -> DataIngestionArtifact:
         try:
             data_ingestion = DataIngestion(data_ingestion_config=self.config.get_data_ingestion_config())
-            
             return data_ingestion.initiate_data_ingestion()
-
         except Exception as e:
-            raise InsuranceException(e, sys) from e
-    
-    def start_data_validation(self, data_ingestion_artifact: DataIngestionArtifact)-> DataValidationArtifact:
+            raise insuranceException(e, sys) from e
+
+    def start_data_validation(self, data_ingestion_artifact: DataIngestionArtifact) \
+            -> DataValidationArtifact:
         try:
-            data_validation = DataValidation(dataValidation_config=self.config.get_data_validation_config(),
+            data_validation = DataValidation(data_validation_config=self.config.get_data_validation_config(),
                                              data_ingestion_artifact=data_ingestion_artifact
                                              )
             return data_validation.initiate_data_validation()
         except Exception as e:
-            raise InsuranceException(e, sys) from e
+            raise insuranceException(e, sys) from e
 
     def start_data_transformation(self,
                                   data_ingestion_artifact: DataIngestionArtifact,
                                   data_validation_artifact: DataValidationArtifact
                                   ) -> DataTransformationArtifact:
         try:
-            data_transformation = Data_Tranformation(
+            data_transformation = DataTransformation(
                 data_transformation_config=self.config.get_data_transformation_config(),
                 data_ingestion_artifact=data_ingestion_artifact,
                 data_validation_artifact=data_validation_artifact
             )
-            return data_transformation.initiate_transformation()
-
+            return data_transformation.initiate_data_transformation()
         except Exception as e:
-            raise InsuranceException(e, sys) from e
+            raise insuranceException(e, sys)
 
     def start_model_trainer(self, data_transformation_artifact: DataTransformationArtifact) -> ModelTrainerArtifact:
         try:
-            model_trainer = ModelTrainer(model_trainer_config=self.config.get_model_trainer_cofig(),
-                                         data_tansformation_artifact=data_transformation_artifact
+            model_trainer = ModelTrainer(model_trainer_config=self.config.get_model_trainer_config(),
+                                         data_transformation_artifact=data_transformation_artifact
                                          )
-            model_trainer_artifact = model_trainer.initiate_model_trainer()
-
-            return model_trainer_artifact
+            return model_trainer.initiate_model_trainer()
         except Exception as e:
-            raise InsuranceException(e, sys) from e
+            raise insuranceException(e, sys) from e
 
     def start_model_evaluation(self, data_ingestion_artifact: DataIngestionArtifact,
                                data_validation_artifact: DataValidationArtifact,
                                model_trainer_artifact: ModelTrainerArtifact) -> ModelEvaluationArtifact:
         try:
             model_eval = ModelEvaluation(
-                model_evaluation_config=self.config.get_model_evaluation_cofig(),
+                model_evaluation_config=self.config.get_model_evaluation_config(),
                 data_ingestion_artifact=data_ingestion_artifact,
                 data_validation_artifact=data_validation_artifact,
                 model_trainer_artifact=model_trainer_artifact)
             return model_eval.initiate_model_evaluation()
         except Exception as e:
-            raise InsuranceException(e, sys) from e
+            raise insuranceException(e, sys) from e
 
     def start_model_pusher(self, model_eval_artifact: ModelEvaluationArtifact) -> ModelPusherArtifact:
         try:
             model_pusher = ModelPusher(
-                model_pusher_config=self.config.get_model_pusher_cofig(),
+                model_pusher_config=self.config.get_model_pusher_config(),
                 model_evaluation_artifact=model_eval_artifact
             )
             return model_pusher.initiate_model_pusher()
         except Exception as e:
-            raise InsuranceException(e, sys) from e
+            raise insuranceException(e, sys) from e
 
     def run_pipeline(self):
         try:
@@ -130,16 +132,17 @@ class Pipeline(Thread):
             logging.info(f"Pipeline experiment: {Pipeline.experiment}")
 
             self.save_experiment()
+
             data_ingestion_artifact = self.start_data_ingestion()
-            data_validaion_artifact = self.start_data_validation(data_ingestion_artifact=data_ingestion_artifact)
+            data_validation_artifact = self.start_data_validation(data_ingestion_artifact=data_ingestion_artifact)
             data_transformation_artifact = self.start_data_transformation(
-                                                                data_ingestion_artifact=data_ingestion_artifact,
-                                                                data_validation_artifact=data_validaion_artifact
-                                                                )
+                data_ingestion_artifact=data_ingestion_artifact,
+                data_validation_artifact=data_validation_artifact
+            )
             model_trainer_artifact = self.start_model_trainer(data_transformation_artifact=data_transformation_artifact)
 
             model_evaluation_artifact = self.start_model_evaluation(data_ingestion_artifact=data_ingestion_artifact,
-                                                                    data_validation_artifact=data_validaion_artifact,
+                                                                    data_validation_artifact=data_validation_artifact,
                                                                     model_trainer_artifact=model_trainer_artifact)
 
             if model_evaluation_artifact.is_model_accepted:
@@ -148,7 +151,7 @@ class Pipeline(Thread):
             else:
                 logging.info("Trained model rejected.")
             logging.info("Pipeline completed.")
-            
+
             stop_time = datetime.now()
             Pipeline.experiment = Experiment(experiment_id=Pipeline.experiment.experiment_id,
                                              initialization_timestamp=self.config.time_stamp,
@@ -165,15 +168,13 @@ class Pipeline(Thread):
             logging.info(f"Pipeline experiment: {Pipeline.experiment}")
             self.save_experiment()
         except Exception as e:
-            raise InsuranceException(e, sys) from e
+            raise insuranceException(e, sys) from e
 
     def run(self):
         try:
             self.run_pipeline()
         except Exception as e:
-            raise InsuranceException(e,sys) from e
-
-
+            raise e
 
     def save_experiment(self):
         try:
@@ -196,7 +197,7 @@ class Pipeline(Thread):
             else:
                 print("First start experiment")
         except Exception as e:
-            raise InsuranceException(e, sys) from e
+            raise insuranceException(e, sys) from e
 
     @classmethod
     def get_experiments_status(cls, limit: int = 5) -> pd.DataFrame:
@@ -208,4 +209,4 @@ class Pipeline(Thread):
             else:
                 return pd.DataFrame()
         except Exception as e:
-            raise InsuranceException(e, sys) from e
+            raise insuranceException(e, sys) from e

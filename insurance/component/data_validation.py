@@ -1,31 +1,41 @@
-import sys, os
-from insurance.logger import logging
 
-from insurance.exception import InsuranceException
-from insurance.entity.config_entity import DataIngestionConfig
-from insurance.entity.artifact_entity import DataIngestionArtifact, DataValidationArtifact
+from insurance.logger import logging
+from insurance.exception import insuranceException
+from insurance.entity.config_entity import DataValidationConfig
+from insurance.entity.artifact_entity import DataIngestionArtifact,DataValidationArtifact
+import os,sys
+import pandas  as pd
 from evidently.model_profile import Profile
 from evidently.model_profile.sections import DataDriftProfileSection
 from evidently.dashboard import Dashboard
 from evidently.dashboard.tabs import DataDriftTab
 import json
-import pandas as pd
 
 class DataValidation:
 
-    def __init__(self,dataValidation_config: DataIngestionConfig,
-                data_ingestion_artifact:DataIngestionArtifact) -> None:
+
+    def __init__(self, data_validation_config:DataValidationConfig,
+        data_ingestion_artifact:DataIngestionArtifact):
         try:
-            logging.info(f"{'>>'*30}Data Valdaition log started.{'<<'*30} \n\n")
-            self.data_validation_config = dataValidation_config
+            logging.info(f"{'='*20}Data Valdaition log started.{'='*20} \n\n")
+            self.data_validation_config = data_validation_config
             self.data_ingestion_artifact = data_ingestion_artifact
-
         except Exception as e:
-            raise InsuranceException(e,sys) from e
+            raise insuranceException(e,sys) from e
 
-    def is_train_test_file_exists(self) -> bool:
+    
+    def get_train_and_test_df(self):
         try:
-            logging.info("chekcing if training and test data available or not")
+            train_df = pd.read_csv(self.data_ingestion_artifact.train_file_path)
+            test_df = pd.read_csv(self.data_ingestion_artifact.test_file_path)
+            return train_df,test_df
+        except Exception as e:
+            raise insuranceException(e,sys) from e
+
+
+    def is_train_test_file_exists(self)->bool:
+        try:
+            logging.info("Checking if training and test file is available")
             is_train_file_exist = False
             is_test_file_exist = False
 
@@ -35,38 +45,36 @@ class DataValidation:
             is_train_file_exist = os.path.exists(train_file_path)
             is_test_file_exist = os.path.exists(test_file_path)
 
-            is_available =  is_test_file_exist and is_train_file_exist
-            logging.info(f"Is train and test file exists ? ==> {is_available}")
-            
+            is_available =  is_train_file_exist and is_test_file_exist
+
+            logging.info(f"Is train and test file exists?-> {is_available}")
+
             if not is_available:
-                message = f"Training file: {train_file_path} or Test_file: {test_file_path} does not exist" 
-                logging.info(message)
+                training_file = self.data_ingestion_artifact.train_file_path
+                testing_file = self.data_ingestion_artifact.test_file_path
+                message=f"Training file: {training_file} or Testing file: {testing_file}" \
+                    "is not present"
                 raise Exception(message)
+
             return is_available
         except Exception as e:
-            raise InsuranceException(e,sys) from e
+            raise insuranceException(e,sys) from e
 
-    def validate_dataset_schema(self) -> bool:
+    def validate_dataset_schema(self)->bool:
         try:
             validation_status = False
-            """
-            do the validation steps of the data set here
-            """
-            validation_status=True
-            return validation_status
-        except Exception as e:
-            raise InsuranceException(e,sys) from e
 
-    def get_train_and_test_df(self):
-        try:
-            train_df = pd.read_csv(self.data_ingestion_artifact.train_file_path)
-            test_df = pd.read_csv(self.data_ingestion_artifact.test_file_path)
-            return train_df,test_df
-        except Exception as e:
-            raise InsuranceException(e,sys) from e
 
+
+            validation_status = True
+            return validation_status 
+        except Exception as e:
+            raise insuranceException(e,sys) from e
+
+    
     def get_and_save_data_drift_report(self):
         try:
+        
             profile = Profile(sections=[DataDriftProfileSection()])
 
             train_df,test_df = self.get_train_and_test_df()
@@ -83,7 +91,7 @@ class DataValidation:
                 json.dump(report, report_file, indent=6)
             return report
         except Exception as e:
-            raise InsuranceException(e,sys) from e
+            raise insuranceException(e,sys) from e
 
     def save_data_drift_report_page(self):
         try:
@@ -97,7 +105,7 @@ class DataValidation:
 
             dashboard.save(report_page_file_path)
         except Exception as e:
-            raise InsuranceException(e,sys) from e
+            raise insuranceException(e,sys) from e
 
     def is_data_drift_found(self)->bool:
         try:
@@ -105,12 +113,10 @@ class DataValidation:
             self.save_data_drift_report_page()
             return True
         except Exception as e:
-            raise InsuranceException(e,sys) from e
+            raise insuranceException(e,sys) from e
 
-
-    def initiate_data_validation(self) :
+    def initiate_data_validation(self):
         try:
-            
             self.is_train_test_file_exists()
             self.validate_dataset_schema()
             self.is_data_drift_found()
@@ -124,10 +130,12 @@ class DataValidation:
             )
             logging.info(f"Data validation artifact: {data_validation_artifact}")
             return data_validation_artifact
-        except Exception as e:
-            raise InsuranceException(e,sys) from e
 
+
+
+        except Exception as e:
+            raise insuranceException(e,sys) from e
 
 
     def __del__(self):
-        logging.info(f"{'>>'*30}Data Valdaition log completed.{'<<'*30} \n\n")
+         logging.info(f"{'='*20}Data Valdaition log completed.{'='*20} \n\n")

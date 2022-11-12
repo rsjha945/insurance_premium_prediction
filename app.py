@@ -2,36 +2,36 @@ from flask import Flask, request
 import sys
 
 import pip
-from insurance.util.utils import read_yaml_file, write_yaml_file
+from insurance.util.util import read_yaml_file, write_yaml_file
 from matplotlib.style import context
 from insurance.logger import logging
-from insurance.exception import InsuranceException
+from insurance.exception import insuranceException
 import os, sys
 import json
-from insurance.config.configuration import Configuration
-from insurance.constant import CURRENT_TIME_STAMP,CONFIG_DIR
+from insurance.config.configuration import Configuartion
+from insurance.constant import CONFIG_DIR, get_current_time_stamp
 from insurance.pipeline.pipeline import Pipeline
-from insurance.entity.insurance_premium_predictor import PremiumData,PremiumPredictor 
+from insurance.entity.insurancepredictor import InsurancePredictor, InsuranceData
 from flask import send_file, abort, render_template
 
 
 ROOT_DIR = os.getcwd()
-LOG_FOLDER_NAME = "insurance_logs"
+# log dir issue fiexed
+LOG_FOLDER_NAME = "logs"
 PIPELINE_FOLDER_NAME = "insurance"
 SAVED_MODELS_DIR_NAME = "saved_models"
 MODEL_CONFIG_FILE_PATH = os.path.join(ROOT_DIR, CONFIG_DIR, "model.yaml")
 LOG_DIR = os.path.join(ROOT_DIR, LOG_FOLDER_NAME)
 PIPELINE_DIR = os.path.join(ROOT_DIR, PIPELINE_FOLDER_NAME)
 MODEL_DIR = os.path.join(ROOT_DIR, SAVED_MODELS_DIR_NAME)
-
+CONFIG_FILE_PATH = os.path.join(ROOT_DIR, CONFIG_DIR, "config.yaml")
 
 from insurance.logger import get_log_dataframe
 
-PREMIUM_DATA_KEY = "premium_data"
-EXPENSES = "expenses"
+INSURANCE_DATA_KEY = "Insurance_data"
+EXPENSES_VALUE_KEY = "expenses"
 
-app = Flask(__name__)
-
+app=Flask(__name__)
 
 @app.route('/artifact', defaults={'req_path': 'insurance'})
 @app.route('/artifact/<path:req_path>')
@@ -74,70 +74,70 @@ def index():
     except Exception as e:
         return str(e)
 
-
-# @app.route('/view_experiment_hist', methods=['GET', 'POST'])
-# def view_experiment_history():
-#     experiment_df = Pipeline.get_experiments_status()
-#     context = {
-#         "experiment": experiment_df.to_html(classes='table table-striped col-12')
-#     }
-#     return render_template('experiment_history.html', context=context)
-
+@app.route('/view_experiment_hist', methods=['GET', 'POST'])
+def view_experiment_history():
+    pipeline = Pipeline(config=Configuartion(CONFIG_FILE_PATH))
+    experiment_df = Pipeline.get_experiments_status()
+    context = {
+        "experiment": experiment_df.to_html(classes='table table-striped col-12')
+    }
+    return render_template('experiment_history.html', context=context)
 
 @app.route('/train', methods=['GET', 'POST'])
 def train():
-    try:
-        message = ""
-        pipeline = Pipeline(config=Configuration(current_time_stamp=CURRENT_TIME_STAMP))
-        if not Pipeline.experiment.running_status:
-            message = "Training started."
-            pipeline.start()
-        else:
-            message = "Training is already in progress."
-        context = {
-            "experiment": pipeline.get_experiments_status().to_html(classes='table table-striped col-12'),
-            "message": message
-        }
-        return render_template('train.html', context=context)
-    except Exception as e:
-        logging.exception(InsuranceException(e,sys))
+    message = ""
+    pipeline = Pipeline(config=Configuartion(current_time_stamp=get_current_time_stamp()))
+    if not Pipeline.experiment.running_status:
+        message = "Training started."
+        pipeline.start()
+    else:
+        message = "Training is already in progress."
+    context = {
+        "experiment": pipeline.get_experiments_status().to_html(classes='table table-striped col-12'),
+        "message": message
+    }
+    return render_template('train.html', context=context)
+
 
 @app.route('/predict', methods=['GET', 'POST'])
 def predict():
     context = {
-        PREMIUM_DATA_KEY: None,
-        EXPENSES: None
+        INSURANCE_DATA_KEY: None,
+        EXPENSES_VALUE_KEY: None
     }
-    try:
-        if request.method == 'POST':
-            age = float(request.form['age'])
-            sex = str(request.form['sex'])
-            bmi = float(request.form['bmi'])
-            children = float(request.form['children'])
-            smoker = str(request.form['smoker'])
-            region = str(request.form['region'])
-            
-            premium_data = PremiumData(age=age,
-                                    sex=sex,
-                                    bmi=bmi,
-                                    children=children,
-                                    smoker=smoker,
-                                    region=region
-                                    
-                                    )
 
-            premium_df = premium_data.get_premium_input_data_frame()
-            premium_predictor = PremiumPredictor(model_dir=MODEL_DIR)
-            expenses = premium_predictor.predict(X=premium_df)
-            print(expenses)
+    if request.method == 'POST':
+        age = int(request.form.get('age'))
+        sex = request.form.get('sex')
+        bmi = float(request.form.get('bmi'))
+        children = int(request.form.get('children'))
+        smoker = request.form.get('smoker')
+        region = request.form.get('region')
+
+        Insurance_data = InsuranceData(age=age,
+                                                        sex=sex,
+                                                        bmi=bmi,
+                                                        children=children,
+                                                        smoker=smoker,
+                                                        region=region,
+                                                        )
+        insurance_df = Insurance_data.get_insurance_input_data_frame()
+        insurance_predictor = InsurancePredictor(model_dir=MODEL_DIR)
+        folder_name = list(map(int, os.listdir(MODEL_DIR)))
+        if folder_name==[]:
             context = {
-                PREMIUM_DATA_KEY: premium_data.get_premium_data_as_dict(),
-                EXPENSES: expenses,
-            }
-            return render_template('predict.html', context=context)
-        return render_template("predict.html", context=context)
-    except Exception as e:
-        return str(InsuranceException(e,sys))
+                        INSURANCE_DATA_KEY: Insurance_data.get_insurance_data_as_dict(),
+                        EXPENSES_VALUE_KEY: "TRAIN MODEL FIRST",
+                        }
+            return render_template('predict.html', context=context)          
+        expenses = insurance_predictor.predict(insurance_df)
+        logging.info(f"expenses :{float(expenses)}" )
+        context = {
+                    INSURANCE_DATA_KEY: Insurance_data.get_insurance_data_as_dict(),
+                    EXPENSES_VALUE_KEY: float(expenses),
+                    }
+        return render_template('predict.html', context=context)
+    return render_template("predict.html", context=context)
 
 @app.route('/saved_models', defaults={'req_path': 'saved_models'})
 @app.route('/saved_models/<path:req_path>')
@@ -164,26 +164,6 @@ def saved_models_dir(req_path):
         "parent_label": abs_path
     }
     return render_template('saved_models_files.html', result=result)
-
-
-@app.route("/update_model_config", methods=['GET', 'POST'])
-def update_model_config():
-    try:
-        if request.method == 'POST':
-            model_config = request.form['new_model_config']
-            model_config = model_config.replace("'", '"')
-            print(model_config)
-            model_config = json.loads(model_config)
-
-            write_yaml_file(file_path=MODEL_CONFIG_FILE_PATH, data=model_config)
-
-        model_config = read_yaml_file(filepath=MODEL_CONFIG_FILE_PATH)
-        return render_template('update_model.html', result={"model_config": model_config})
-
-    except  Exception as e:
-        logging.exception(InsuranceException(e,sys))
-        return str(e)
-
 
 @app.route(f'/logs', defaults={'req_path': f'{LOG_FOLDER_NAME}'})
 @app.route(f'/{LOG_FOLDER_NAME}/<path:req_path>')
@@ -214,5 +194,5 @@ def render_log_dir(req_path):
     return render_template('log_files.html', result=result)
 
 
-if __name__ == "__main__":
+if __name__=="__main__":
     app.run()
